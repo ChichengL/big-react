@@ -11,6 +11,7 @@ function prepareFreshStack(fiber: FiberNode) {
 }
 
 function renderRoot(root: FiberNode) {
+	prepareFreshStack(root);
 	do {
 		try {
 			workLoop();

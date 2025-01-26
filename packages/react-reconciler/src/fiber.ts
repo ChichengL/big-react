@@ -1,6 +1,8 @@
+import { UpdateQueue } from './updateQueue';
 import { Key, Props, Ref } from 'shared/ReactTypes';
 import { WorkTags } from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
+import { Container } from 'hostConfig';
 export class FiberNode {
 	tag: WorkTags;
 	key: Key;
@@ -16,6 +18,8 @@ export class FiberNode {
 	memoizedProps: Props | null;
 	alternate: FiberNode | null; // 指向 alternate 节点，用于实现链表结构的快速切换
 	flags: Flags;
+	UpdateQueue: unknown;
+
 	constructor(tag: WorkTags, pendingProps: Props, key: Key) {
 		// 实例
 		this.tag = tag;
@@ -34,9 +38,26 @@ export class FiberNode {
 
 		this.ref = null;
 
+		//作为工作单元
 		this.pendingProps = pendingProps; //刚开始的props
 		this.memoizedProps = null; // 工作中使用的props
+		this.UpdateQueue = null;
+
 		this.alternate = null; // 指向 alternate 节点，用于实现链表结构的快速切换
+		// 副作用
 		this.flags = NoFlags; // 标记位
+	}
+}
+
+export class FiberRootNode {
+	container: Container;
+	current: FiberNode;
+	finishedWork: FiberNode | null;
+
+	constructor(container: Container, hostRootFiber: FiberNode) {
+		this.container = container;
+		this.current = hostRootFiber;
+		hostRootFiber.stateNode = this;
+		this.finishedWork = null;
 	}
 }
