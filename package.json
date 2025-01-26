@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"lint": "eslint --fix --quiet --cache ./packages",
+		"lint": "eslint --fix --quiet ./packages",
 		"build:dev": "rimraf dist &&  rollup --bundleConfigAsCjs --config script/rollup/react.config.js "
 	},
 	"keywords": [],

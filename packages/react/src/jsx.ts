@@ -60,4 +60,30 @@ export const jsx = (type: ElementType, config: any, ...children: any[]) => {
 	return ReactElemnt(type, key, ref, props);
 };
 
-export const jsxDEV = jsx;
+export const jsxDEV = (type: ElementType, config: any) => {
+	let key: Key = null;
+	const props: Props = {};
+	let ref: Ref = null;
+
+	for (const prop in config) {
+		const val = config[prop];
+		if (prop === 'key') {
+			if (val !== undefined) {
+				key = '' + val;
+			}
+			continue;
+		}
+		if (prop === 'ref') {
+			if (val !== undefined) {
+				ref = val;
+			}
+			continue;
+		}
+		if ({}.hasOwnProperty.call(config, prop)) {
+			// 如果是自己的prop，则添加到props中
+			props[prop] = val;
+		}
+	}
+
+	return ReactElemnt(type, key, ref, props);
+};
