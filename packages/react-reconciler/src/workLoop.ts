@@ -2,15 +2,42 @@
 
 import { beginWork } from './beginWork';
 import { completeWork } from './completeWork';
-import { FiberNode } from './fiber';
+import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
+import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 指向当前工作的Fiber节点，方便后续更新
 
-function prepareFreshStack(fiber: FiberNode) {
-	workInProgress = fiber;
+function prepareFreshStack(fiber: FiberRootNode) {
+	//这个fiber没有child只有current
+	// fiberRootNode.current -> rootFiber(这才是第一个可以正常使用的fiber节点)
+
+	workInProgress = createWorkInProgress(fiber.current, {});
 }
 
-function renderRoot(root: FiberNode) {
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
+	// 调度功能
+	// 首屏渲染是hostFiber，其他情况下不是 找到fiberRootNode节点
+	const root = markUpdateFromFiberToRoot(fiber);
+
+	renderRoot(root);
+}
+
+function markUpdateFromFiberToRoot(fiber: FiberNode) {
+	let node = fiber;
+	let parent = fiber.return;
+
+	while (parent !== null) {
+		node = parent;
+		parent = parent.return;
+		//找到hostrootfiber节点
+	}
+	if (node.tag === HostRoot) {
+		// 然后返回fiberrootNode节点
+		return node.stateNode;
+	}
+	return null;
+}
+function renderRoot(root: FiberRootNode) {
 	prepareFreshStack(root);
 	do {
 		try {

@@ -8,12 +8,21 @@ export interface UpdateQueue<State> {
 		pending: Update<State> | null;
 	};
 }
+/**
+ *
+ * @function createUpdate 创建action 更新对应的数据结构
+ *
+ */
 export const createUpdate = <State>(action: Action<State>): Update<State> => {
 	return {
 		action,
 	};
 };
 
+/**
+ * @function createUpdateQueue 保存数据结构的队列
+ * @
+ */
 export const createUpdateQueue = <Action>() => {
 	return {
 		shared: {
@@ -22,6 +31,9 @@ export const createUpdateQueue = <Action>() => {
 	} as UpdateQueue<Action>;
 };
 
+/**
+ * @function enqueueUpdate 入队更新
+ */
 export const enqueueUpdate = <Action>(
 	UpdateQueue: UpdateQueue<Action>,
 	update: Update<Action>,
@@ -44,4 +56,5 @@ export const processUpdateQueue = <State>(
 			result.memoizedState = action;
 		}
 	}
+	return result;
 };
