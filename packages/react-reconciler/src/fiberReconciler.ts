@@ -1,8 +1,8 @@
 import {
 	createUpdate,
-	createUpdateQueue,
+	createupdateQueue,
 	enqueueUpdate,
-	UpdateQueue,
+	updateQueue,
 } from './updateQueue';
 import { Container } from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
@@ -15,7 +15,7 @@ export function createContainer(container: Container) {
 
 	const hostRootFiber = new FiberNode(HostRoot, {}, null);
 	const root = new FiberRootNode(container, hostRootFiber);
-	hostRootFiber.UpdateQueue = createUpdateQueue();
+	hostRootFiber.updateQueue = createupdateQueue();
 	return root;
 }
 
@@ -29,7 +29,7 @@ export function updateContainer(
 
 	//插入第一个节点
 	enqueueUpdate(
-		hostRootFiber.UpdateQueue as UpdateQueue<ReactElementType | null>,
+		hostRootFiber.updateQueue as updateQueue<ReactElementType | null>,
 		update,
 	);
 	scheduleUpdateOnFiber(hostRootFiber);

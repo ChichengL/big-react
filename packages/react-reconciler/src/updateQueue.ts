@@ -23,22 +23,22 @@ export const createUpdate = <State>(action: Action<State>): Update<State> => {
  * @function createUpdateQueue 保存数据结构的队列
  * @
  */
-export const createUpdateQueue = <Action>() => {
+export const createUpdateQueue = <State>() => {
 	return {
 		shared: {
 			pending: null,
 		},
-	} as UpdateQueue<Action>;
+	} as UpdateQueue<State>;
 };
 
 /**
  * @function enqueueUpdate 入队更新
  */
-export const enqueueUpdate = <Action>(
-	UpdateQueue: UpdateQueue<Action>,
-	update: Update<Action>,
+export const enqueueUpdate = <State>(
+	updateQueue: UpdateQueue<State>,
+	update: Update<State>,
 ) => {
-	UpdateQueue.shared.pending = update;
+	updateQueue.shared.pending = update;
 };
 
 export const processUpdateQueue = <State>(
