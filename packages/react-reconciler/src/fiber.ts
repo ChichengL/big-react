@@ -19,6 +19,7 @@ export class FiberNode {
 	memoizedState: any;
 	alternate: FiberNode | null; // 指向 alternate 节点，用于实现链表结构的快速切换
 	flags: Flags;
+	subTreeFlags: Flags; // 子树的标记位，用于标记子树是否需要更新
 	updateQueue: unknown;
 
 	constructor(tag: WorkTags, pendingProps: Props, key: Key) {
@@ -48,6 +49,7 @@ export class FiberNode {
 		this.alternate = null; // 指向 alternate 节点，用于实现链表结构的快速切换
 		// 副作用
 		this.flags = NoFlags; // 标记位
+		this.subTreeFlags = NoFlags; // 子树的标记位，用于标记子树是否需要更新
 	}
 }
 
@@ -80,6 +82,7 @@ export const createWorkInProgress = (
 		// update	更新的时候，会产生两个fiber树，一个current，一个wip，current指向当前的树，wip指向即将更新的树
 		wip.pendingProps = pendingProps;
 		wip.flags = NoFlags;
+		wip.subTreeFlags = NoFlags;
 	}
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;
