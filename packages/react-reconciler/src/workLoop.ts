@@ -3,10 +3,16 @@
 import { beginWork } from './beginWork';
 import { completeWork } from './completeWork';
 import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
+import { MutationMask, NoFlags } from './fiberFlags';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 指向当前工作的Fiber节点，方便后续更新
-
+/**
+ * React 内部分为三个阶段
+ * schedule 调度更新执行
+ * render   beiginWork,completeWork
+ * commit beforMutation,mutation,layout
+ */
 function prepareFreshStack(fiber: FiberRootNode) {
 	//这个fiber没有child只有current
 	// fiberRootNode.current -> rootFiber(这才是第一个可以正常使用的fiber节点)
@@ -41,7 +47,7 @@ function renderRoot(root: FiberRootNode) {
 	prepareFreshStack(root);
 	do {
 		try {
-			workLoop();
+			workLoop(); //render阶段 包含beginWork,completeWork 对应beginWork.ts,completeWork.ts
 			break;
 		} catch (e) {
 			if (__DEV__) {
@@ -55,10 +61,48 @@ function renderRoot(root: FiberRootNode) {
 	root.finishedWork = finishedWork;
 
 	// wip fiberNode树 树中的flags
-	// commitRoot(root);
+	commitRoot(root); //commit阶段 包含beforMutation,mutation,layout三个阶段 在commitWork.ts中实现
+}
+/**
+ * commit阶段需要：
+ * 1.fiber树的切换
+ * 2.执行placement对应的操作  更新DOM节点的操作
+ *
+ */
+
+function commitRoot(root: FiberRootNode) {
+	const finishedWork = root.finishedWork;
+
+	if (finishedWork === null) {
+		return;
+	}
+
+	if (__DEV__) {
+		console.warn('warn commitRoot start', finishedWork);
+	}
+
+	// 重置操作
+	root.finishedWork = null;
+
+	// 需要判断root.flags, root.subTreeFlags
+
+	const subtreeHasEffect =
+		(finishedWork.subTreeFlags & MutationMask) !== NoFlags;
+	const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags;
+	// 判断三个子阶段需要执行的操作
+
+	if (rootHasEffect || subtreeHasEffect) {
+		// beforeMutation
+		// mutation(placement)
+		root.current = finishedWork;
+		// layout
+	} else {
+		root.current = finishedWork;
+	}
 }
 
 function workLoop() {
+	// render阶段的入口
 	while (workInProgress !== null) {
 		performUnitOfWork(workInProgress);
 	}

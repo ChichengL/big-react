@@ -56,7 +56,7 @@ export class FiberNode {
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
-	finishedWork: FiberNode | null;
+	finishedWork: FiberNode | null; //已经更新完成的fiber树，在mount阶段为null
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;

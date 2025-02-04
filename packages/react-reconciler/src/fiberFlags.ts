@@ -8,3 +8,5 @@ export type Flags =
 	| typeof Placement
 	| typeof Update
 	| typeof ChildDeletion;
+
+export const MutationMask = Placement | Update | ChildDeletion;
