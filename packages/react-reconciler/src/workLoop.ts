@@ -1,6 +1,7 @@
 // 这里调用beginWork,completeWork,commitWork三个函数，完成React组件的更新。
 
 import { beginWork } from './beginWork';
+import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
@@ -94,7 +95,10 @@ function commitRoot(root: FiberRootNode) {
 	if (rootHasEffect || subtreeHasEffect) {
 		// beforeMutation
 		// mutation(placement)
+		commitMutationEffects(finishedWork);
+
 		root.current = finishedWork;
+
 		// layout
 	} else {
 		root.current = finishedWork;

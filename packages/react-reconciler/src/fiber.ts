@@ -54,12 +54,13 @@ export class FiberNode {
 }
 
 export class FiberRootNode {
+	// fiberRootNode 是整个应用的根节点其current 指向fiber树
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null; //已经更新完成的fiber树，在mount阶段为null
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
-		this.container = container;
+		this.container = container; //指向真实dom
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
