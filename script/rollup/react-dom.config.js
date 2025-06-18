@@ -16,12 +16,14 @@ export default [
 				file: `${pkgDistPath}/index.js`,
 				name: 'index.js',
 				format: 'umd',
+				sourcemap: true,
 			},
 			{
 				//React18
 				file: `${pkgDistPath}/client.js`,
 				name: 'client.js',
 				format: 'umd',
+				sourcemap: true,
 			},
 		],
 		plugins: [
