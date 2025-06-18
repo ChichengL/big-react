@@ -1,4 +1,3 @@
-import { UpdateQueue } from './updateQueue';
 import { Key, Props, ReactElementType, Ref } from 'shared/ReactTypes';
 import { FunctionComponent, HostComponent, WorkTags } from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
