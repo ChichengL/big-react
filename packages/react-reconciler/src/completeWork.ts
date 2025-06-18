@@ -5,7 +5,12 @@ import {
 	Instance,
 } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import {
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText,
+} from './workTags';
 import { NoFlags } from './fiberFlags';
 
 // 归过程
@@ -41,6 +46,10 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 
 			return null;
 		case HostRoot:
+			bubbleProperties(wip); // 冒泡属性到父节点
+
+			return null;
+		case FunctionComponent:
 			bubbleProperties(wip); // 冒泡属性到父节点
 
 			return null;
