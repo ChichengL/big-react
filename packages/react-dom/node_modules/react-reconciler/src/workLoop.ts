@@ -22,8 +22,8 @@ function prepareFreshStack(fiber: FiberRootNode) {
 }
 
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
-	// 调度功能
-	// 首屏渲染是hostFiber，其他情况下不是 找到fiberRootNode节点
+	//TODO: 调度功能
+	// 首屏渲染是hostFiber，其他情况下不是。其他情况是找到fiberRootNode节点
 	const root = markUpdateFromFiberToRoot(fiber);
 
 	renderRoot(root);
