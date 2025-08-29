@@ -12,6 +12,7 @@ export const useState: Dispatcher['useState'] = (initialState: any) => {
 };
 
 //实现内部数据共享层
+//方便其他hook使用
 export const __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
 	currentDispatcher,
 };

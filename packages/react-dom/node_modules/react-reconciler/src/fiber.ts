@@ -15,8 +15,8 @@ export class FiberNode {
 	child: FiberNode | null;
 	index: number;
 	memoizedProps: Props | null;
-	memoizedState: any;
-	alternate: FiberNode | null; // 指向 alternate 节点，用于实现链表结构的快速切换
+	memoizedState: any; //指向hooks链表
+	alternate: FiberNode | null; // 指向 alternate 节点，用于实现链表结构的快速切换,上一次的fiber树
 	flags: Flags;
 	subTreeFlags: Flags; // 子树的标记位，用于标记子树是否需要更新
 	updateQueue: unknown;
