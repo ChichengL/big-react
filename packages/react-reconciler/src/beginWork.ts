@@ -14,7 +14,10 @@ import { renderWithHooks } from './fiberHooks';
 export const beginWork = (wip: FiberNode) => {
 	//1. 计算状态的最新值
 	//2. 创建子fiberNode
-
+	/**
+	 * 对于update流程begin work还需要处理 ChildrenDeletion 和 节点移动的情况比如(abc->bca)
+	 */
+	//暂时只处理单节点的问题（也就是先不考虑移动
 	switch (wip.tag) {
 		case HostRoot:
 			return updateHostRoot(wip);

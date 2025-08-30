@@ -11,12 +11,21 @@ import {
 	HostRoot,
 	HostText,
 } from './workTags';
-import { NoFlags } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
+
+function markUpdate(fiber: FiberNode) {
+	fiber.flags |= Update;
+}
 
 // 归过程
 export const completeWork = (wip: FiberNode): FiberNode | null => {
 	const newProps = wip.pendingProps;
 	const current = wip.alternate;
+	/**
+	 * update过程 completeWork主要做两件事
+	 * 1. 处理HostText内容更新的情况
+	 * 2. 处理HostComponent属性更新的情况
+	 */
 
 	switch (wip.tag) {
 		case HostComponent:
@@ -35,6 +44,11 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 		case HostText:
 			if (current !== null && wip.stateNode) {
 				//stateNode对应着真实DOM节点 update
+				const oldText = current.memoizedProps.content;
+				const newText = newProps.content;
+				if (oldText !== newText) {
+					markUpdate(wip);
+				}
 			} else {
 				// mount
 				const instance = createTextInstance(newProps.content); // 创建宿主环境的实例
@@ -101,7 +115,7 @@ function bubbleProperties(wip: FiberNode) {
 	while (child !== null) {
 		subTreeFlags |= child.subTreeFlags;
 		subTreeFlags |= child.flags;
-		// subTreeFalgs	记录了子树的标记位，用于标记子树是否需要更新
+		// subTreeFlags	记录了子树的标记位，用于标记子树是否需要更新
 
 		child.return = wip;
 		child = child.sibling;

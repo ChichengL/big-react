@@ -20,6 +20,7 @@ export class FiberNode {
 	flags: Flags;
 	subTreeFlags: Flags; // 子树的标记位，用于标记子树是否需要更新
 	updateQueue: unknown;
+	deletions: FiberNode[] | null; // 存储删除的子节点
 
 	constructor(tag: WorkTags, pendingProps: Props, key: Key) {
 		// 实例
@@ -49,6 +50,8 @@ export class FiberNode {
 		// 副作用
 		this.flags = NoFlags; // 标记位
 		this.subTreeFlags = NoFlags; // 子树的标记位，用于标记子树是否需要更新
+
+		this.deletions = null; // 存储删除的子节点
 	}
 }
 
@@ -83,6 +86,7 @@ export const createWorkInProgress = (
 		wip.pendingProps = pendingProps;
 		wip.flags = NoFlags;
 		wip.subTreeFlags = NoFlags;
+		wip.deletions = null;
 	}
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;
