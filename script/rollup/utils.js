@@ -30,5 +30,5 @@ export function getBaseRollupPlugins({
 	},
 	typescript = {},
 } = {}) {
-	return [cjs(), ts(typescript), replace(alias)];
+	return [ts(typescript), cjs(), replace(alias)];
 }

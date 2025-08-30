@@ -14,14 +14,14 @@ export default [
 			{
 				//React17
 				file: `${pkgDistPath}/index.js`,
-				name: 'index.js',
+				name: 'ReactDOM',
 				format: 'umd',
 				sourcemap: true,
 			},
 			{
 				//React18
 				file: `${pkgDistPath}/client.js`,
-				name: 'client.js',
+				name: 'client',
 				format: 'umd',
 				sourcemap: true,
 			},
@@ -48,5 +48,20 @@ export default [
 				}),
 			}),
 		],
+	},
+	//react-dom包的test-utils打包
+	{
+		input: `${pkgPath}/test-utils.ts`,
+		output: [
+			//兼容打包
+			{
+				file: `${pkgDistPath}/test-utils.js`,
+				name: 'testUtils.js',
+				format: 'umd',
+				sourcemap: true,
+			},
+		],
+		external: ['react', 'react-dom'], //对于外部依赖不进行打包
+		plugins: getBaseRollupPlugins(),
 	},
 ];

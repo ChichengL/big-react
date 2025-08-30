@@ -15,7 +15,7 @@ let workInProgressHook: Hook | null = null; //当前正在处理的hook
 const { currentDispatcher } = internals;
 interface Hook {
 	memoizedState: any; //保存当前hook的状态
-	updateQueue: unknown; //保存当前hook的更新队列 //当setState 时会往更新队列里添加更新
+	updateQueue: any; //保存当前hook的更新队列 //当setState 时会往更新队列里添加更新
 	next: Hook | null; //指向下一个hook
 }
 export function renderWithHooks(wip: FiberNode) {
@@ -57,7 +57,7 @@ function mountState<State>(
 	const queue = createUpdateQueue<State>(); //因为state能够触发更新
 	hook.updateQueue = queue;
 	hook.memoizedState = memoizedState;
-
+	//@ts-ignore
 	const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber!, queue);
 	queue.dispatch = dispatch;
 	return [memoizedState, dispatch];
