@@ -54,6 +54,16 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 	// 当前的finishedWork是真正存在flags的节点
 	const flags = finishedWork.flags;
+	if ((flags & ChildDeletion) !== NoFlags) {
+		// update
+		const deletions = finishedWork.deletions;
+		if (deletions !== null) {
+			deletions.forEach((childToDeletion) => {
+				commitDeletion(childToDeletion);
+			});
+		}
+		finishedWork.flags &= ~ChildDeletion;
+	}
 	if ((flags & Placement) !== NoFlags) {
 		//表示当前节点是一个Placement节点
 		commitPlacement(finishedWork);
@@ -65,16 +75,6 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 		commitUpdate(finishedWork);
 		finishedWork.flags &= ~Update;
 	}
-	if ((flags & ChildDeletion) !== NoFlags) {
-		// update
-		const deletions = finishedWork.deletions;
-		if (deletions !== null) {
-			deletions.forEach((childToDeletion) => {
-				commitDeletion(childToDeletion);
-			});
-		}
-		finishedWork.flags &= ~ChildDeletion;
-	}
 };
 
 const commitDeletion = (childToDeletion: FiberNode) => {
@@ -82,25 +82,25 @@ const commitDeletion = (childToDeletion: FiberNode) => {
 	//1.对于FC 执行effect unmount
 	//2.对于HostComponent 解绑ref
 	//3.对于HostText 直接删除
-	let rootHostComponent: FiberNode | null = null;
+	let rootHostNode: FiberNode | null = null;
 	//递归子树
 	commitNestedComponent(childToDeletion, (unmountFiber) => {
 		switch (unmountFiber.tag) {
 			case HostComponent:
-				if (rootHostComponent === null) {
+				if (rootHostNode === null) {
 					//找到要删除的第一个HostComponent
-					rootHostComponent = unmountFiber;
+					rootHostNode = unmountFiber;
 				}
 				//TODO: 解绑ref
 				return;
 			case HostText:
-				if (rootHostComponent === null) {
+				if (rootHostNode === null) {
 					//找到要删除的第一个HostComponent
-					rootHostComponent = unmountFiber;
+					rootHostNode = unmountFiber;
 				}
 				return;
 			case FunctionComponent:
-				//TODO: useEffect unmount
+				//TODO: useEffect unmount 以及ref调用
 				return;
 			default:
 				if (__DEV__) {
@@ -109,7 +109,7 @@ const commitDeletion = (childToDeletion: FiberNode) => {
 				return;
 		}
 	});
-	if (rootHostComponent !== null) {
+	if (rootHostNode !== null) {
 		//删除rootHostComponent对应的DOM
 		const hostParent = getHostParent(childToDeletion);
 		if (hostParent === null) {
@@ -118,13 +118,19 @@ const commitDeletion = (childToDeletion: FiberNode) => {
 			}
 			return;
 		}
-		removeChild(hostParent, rootHostComponent);
+		removeChild(hostParent, (rootHostNode as FiberNode).stateNode);
 	}
 	//删除完成之后,重置
 	childToDeletion.return = null;
 	childToDeletion.child = null;
 };
-//子树的节点和回调函数
+/**
+ *
+ * @param root 根节点
+ * @param onCommitUnmount 卸载回调函数
+ * @description 递归卸载子树
+ * @returns
+ */
 function commitNestedComponent(
 	root: FiberNode,
 	onCommitUnmount: (fiber: FiberNode) => void,
@@ -136,6 +142,32 @@ function commitNestedComponent(
 		if (node.child !== null) {
 			node.child.return = node;
 			node = node.child;
+			/**
+			 * 问题记录
+			 * 描述：
+			 ```
+			 function App() {
+				const [num, setNum] = useState(222);
+				window.setNum = setNum;
+				return num === 3 ? <Child /> : <div>{num}</div>;
+			 }
+			 function Child() {
+			 	return <p>child</p>;
+			 }
+			 ```
+			 这样子的组件当调用setNum(3) 再setNum(0)后，Child无法被卸载
+			 * 在 root 是 Child(FunctionComponent) 且它有子节点 <p> 时，执行顺序是：
+
+				onCommitUnmount(root) 被调用（这时还没看到宿主节点）。
+
+				发现有 child，把 node 指到 <p>，但没 continue。
+
+				直接进入“回溯/兄弟”分支，因为 <p> 没有兄弟且 node.return === root，于是 return。 
+				这里相当于调用到了onCommitUnmount(Child) 本应该要调用onCommitUnmount(p)及其子节点的onCommitUnmount
+
+				结果：onCommitUnmount 从未对 <p> / 文本节点调用过，rootHostNode 当然也就没被设到 <p>，导致不删除。
+			 */
+			continue; //这里需要遍历完成child之后再去遍历child的sibling，不然可能会提前终止
 		}
 		if (node === root) {
 			//终止

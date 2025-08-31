@@ -8,7 +8,9 @@ import { Action } from '../../shared/ReactTypes';
  * 多个hook通过dispatcher和react进行连接
  */
 export interface Dispatcher {
-	useState: <T>(initialState: (() => T) | T) => [T, Dispatch<T>];
+	useState:
+		| (<T>(initialState: (() => T) | T) => [T, Dispatch<T>])
+		| (<T>() => [T, Dispatch<T>]);
 	useEffect?: (
 		create: () => (() => void) | void,
 		deps: Array<any> | void,

@@ -1,4 +1,4 @@
-import { ReactElementType } from 'shared/ReactTypes';
+import { Props, ReactElementType } from 'shared/ReactTypes';
 import {
 	createFiberFromElement,
 	FiberNode,
@@ -9,6 +9,13 @@ import { HostText } from './workTags';
 import { Placement, ChildDeletion } from './fiberFlags';
 
 function childReconciler(shouldTrackEffects: boolean) {
+	/**
+	 *
+	 * @param returnFiber
+	 * @param currentFiber 屏幕上显示内容对应的fiber节点
+	 * @param element
+	 * @returns
+	 */
 	function reconcileSingleElement(
 		returnFiber: FiberNode,
 		currentFiber: FiberNode | null,
