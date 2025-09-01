@@ -8,6 +8,7 @@ import {
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
+import { Lanes, NoLane, NoLanes } from './fiberLanes';
 export class FiberNode {
 	tag: WorkTags;
 	key: Key;
@@ -66,12 +67,15 @@ export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null; //已经更新完成的fiber树，在mount阶段为null
-
+	pendingLanes: Lanes; //所有未被消费的lane的集合
+	finishedLanes: Lanes; //本次更新消费的lane
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container; //指向真实dom
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
+		this.pendingLanes = NoLanes;
+		this.finishedLanes = NoLane;
 	}
 }
 

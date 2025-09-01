@@ -10,6 +10,7 @@ import {
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
+import { requestUpdateLanes } from './fiberLanes';
 
 let currentlyRenderingFiber: FiberNode | null = null; //当前正在处理的fiber节点 存在于内存中即将展示的fiber
 let workInProgressHook: Hook | null = null; //当前正在处理的hook
@@ -87,10 +88,11 @@ function dispatchSetState<State>(
 	updateQueue: UpdateQueue<State>,
 	action: Action<State>,
 ) {
-	const update = createUpdate(action);
+	const lane = requestUpdateLanes();
+	const update = createUpdate(action, lane);
 	//类似于fiberReconciler中的updateQueue，只不过这里是针对单个hook的，fiberReconciler中的updateQueue是针对整个fiberNode的
 	enqueueUpdate(updateQueue, update);
-	scheduleUpdateOnFiber(fiber);
+	scheduleUpdateOnFiber(fiber, lane);
 }
 function mountWorkInProgressHook(): Hook {
 	const hook: Hook = {

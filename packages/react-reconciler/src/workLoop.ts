@@ -5,14 +5,15 @@ import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
+import { Lane, mergeLane } from './fiberLanes';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 指向当前工作的Fiber节点，方便后续更新
 /**
  * React 内部分为三个阶段
  * schedule 调度更新执行
- * render   beiginWork,completeWork
- * commit beforMutation,mutation,layout
+ * render   beginWork,completeWork
+ * commit beforeMutation,mutation,layout
  */
 function prepareFreshStack(fiber: FiberRootNode) {
 	//这个fiber没有child只有current
@@ -21,12 +22,16 @@ function prepareFreshStack(fiber: FiberRootNode) {
 	workInProgress = createWorkInProgress(fiber.current, {});
 }
 
-export function scheduleUpdateOnFiber(fiber: FiberNode) {
+export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	//TODO: 调度功能
 	// 首屏渲染是hostFiber，其他情况下不是。其他情况是找到fiberRootNode节点
 	const root = markUpdateFromFiberToRoot(fiber);
-
+	markRootFiberLane(root, lane);
 	renderRoot(root);
+}
+
+function markRootFiberLane(root: FiberRootNode, lane: Lane) {
+	root.pendingLanes = mergeLane(root.pendingLanes, lane);
 }
 
 function markUpdateFromFiberToRoot(fiber: FiberNode) {
