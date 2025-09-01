@@ -52,3 +52,11 @@ export const removeChild = (
 ) => {
 	container.removeChild(child);
 };
+
+export const insertChildToContainer = (
+	child: Instance,
+	container: Instance | TextInstance,
+	before: Instance,
+) => {
+	container.insertBefore(child, before);
+};
