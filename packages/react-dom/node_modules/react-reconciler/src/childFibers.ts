@@ -8,6 +8,8 @@ import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
 import { HostText } from './workTags';
 import { Placement, ChildDeletion } from './fiberFlags';
 
+type ExistingChildren = Map<string | number, FiberNode>;
+
 function childReconciler(shouldTrackEffects: boolean) {
 	function deleteRemainingChildren(
 		returnFiber: FiberNode,
@@ -121,6 +123,135 @@ function childReconciler(shouldTrackEffects: boolean) {
 		return fiber;
 	}
 
+	function reconcileChildrenArray(
+		returnFiber: FiberNode,
+		currentFiber: FiberNode | null,
+		newChildren: any[],
+	) {
+		let lastPlacedIndex: number = 0; //最后一个可复用fiber在current中的index
+		let lastNewFiber: FiberNode | null = null; //创建的最后一个fiber
+		let firstNewFiber: FiberNode | null = null; //创建的第一个fiber
+		// 1. 将current中所有同级的fiber保存在Map中
+		const existingChildren: ExistingChildren = new Map();
+		let current = currentFiber;
+		while (current !== null) {
+			const keyToUse = current.key !== null ? current.key : current.index;
+			existingChildren.set(keyToUse, current);
+			current = current.sibling;
+		}
+		// 2.遍历newChildren
+		for (let i = 0; i < newChildren.length; i++) {
+			const after = newChildren[i];
+			const newFiber = updateFromMap(returnFiber, existingChildren, i, after);
+			if (newFiber === null) {
+				continue;
+			}
+			/**
+			 * 3. 标记移动还是插入
+			 * 移动的依据：element的index 	与{element对应 currentFiber的} index比较
+			 * 接下来遍历到的可复用fiber的index < lastPlacedIndex，则表示需要移动
+			 * 比如存在ABC->BCA
+			 *  第一轮: firstNewFiber = B,lastNewFiber = B,lastPlacedIndex = 1
+			 *  第二轮: firstNewFiber = B,lastNewFiber = C,lastPlacedIndex = 2
+			 *  第三轮: firstNewFiber = B,lastNewFiber = A,lastPlacedIndex = 2 然后这里遍历到A Fiber A的oldIndex为0表明A需要移动
+			 * 这里本质上是做的是一套 “基于 key 的贪心策略”，找到最小变更
+			 */
+			newFiber.index = i;
+			newFiber.return = returnFiber;
+
+			if (lastNewFiber === null) {
+				firstNewFiber = newFiber; //创建的第一个fiber
+				lastNewFiber = newFiber;
+			} else {
+				lastNewFiber.sibling = newFiber;
+				lastNewFiber = lastNewFiber.sibling; //创建的最后一个fiber
+			}
+			if (!shouldTrackEffects) {
+				continue;
+			}
+			const current = newFiber.alternate;
+			if (current !== null) {
+				const oldIndex = current.index;
+				if (oldIndex < lastPlacedIndex) {
+					//需要移动
+					newFiber.flags |= Placement;
+					continue;
+				} else {
+					//不需要移动
+					lastPlacedIndex = oldIndex;
+				}
+			} else {
+				//mount阶段
+				newFiber.flags |= Placement;
+			}
+		}
+		//4.删除不存在的fiber
+		existingChildren.forEach((fiber) => {
+			deleteChild(returnFiber, fiber);
+		});
+		return firstNewFiber;
+	}
+	function updateFromMap(
+		returnFiber: FiberNode,
+		existingChildren: ExistingChildren,
+		index: number,
+		element: any,
+	): FiberNode | null {
+		const keyToUse = element.key !== null ? element.key : index;
+		const before = existingChildren.get(keyToUse);
+
+		if (typeof before === 'string' || typeof before === 'number') {
+			//element是hostText的情况
+			if (before) {
+				if ((before as FiberNode).tag === HostText) {
+					//说明是hostText类型
+					existingChildren.delete(keyToUse);
+					return useFiber(before as FiberNode, { content: element + '' });
+				}
+			}
+			return new FiberNode(HostText, { content: element + '' }, null);
+		}
+
+		if (typeof element === 'object' && element !== null) {
+			//ReactElement
+			switch (element.$$typeof) {
+				case REACT_ELEMENT_TYPE:
+					if (before) {
+						if (before.type === element.type) {
+							//说明是同一个类型
+							existingChildren.delete(keyToUse);
+							return useFiber(before, element.props);
+						}
+					}
+					return createFiberFromElement(element);
+			}
+
+			//TODO: 数组类型
+			if (Array.isArray(element) && __DEV__) {
+				/**
+				  例子
+				  <ul>
+					<li/>
+					<li/>
+					{[<li/>,<li/>]}
+				  </ul>
+
+				  或者是Fragment时
+				  <ul>
+					<li/>
+					<li/>
+					<>
+						<li/>
+						<li/>
+					</>
+				  </ul>
+				 */
+				console.warn('还没实现数组的Child');
+			}
+		}
+		return null;
+	}
+
 	return function reconcileChildFibers(
 		returnFiber: FiberNode,
 		currentFiber: FiberNode | null,
@@ -143,10 +274,22 @@ function childReconciler(shouldTrackEffects: boolean) {
 					}
 					break;
 			}
+			//TODO: 多节点的情况 ul>li*4
+			/**
+			 * 整体流程 多节点存在 插入 移动 删除
+			 * 1. 将current中所有同级的fiber保存在Map中
+			 * 2. 遍历 newChild数组，对每个遍历到的element，存在以下两种情况
+			 * 	1.Map中存在对应的currentFiber 且可以复用
+			 *  2.Map中不存在对应的currentFiber 或 不能复用
+			 * 3. 判断插入还是移动
+			 * 4. 最后Map中剩下的都标记删除
+			 */
+			if (Array.isArray(newChild)) {
+				return reconcileChildrenArray(returnFiber, currentFiber, newChild);
+			}
 		}
-		//TODO: 多节点的情况 ul>li*4
 
-		// TODO: HostText 类型
+		//  HostText 类型
 		if (typeof newChild === 'string' || typeof newChild === 'number') {
 			return placeSingleChild(
 				reconcileSingleTextNode(returnFiber, currentFiber, newChild),
