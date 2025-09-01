@@ -10,24 +10,26 @@ import {
 import { ReactElementType } from 'shared/ReactTypes';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
+import { Lane } from './fiberLanes';
 
 //递归
-export const beginWork = (wip: FiberNode) => {
+export const beginWork = (wip: FiberNode, renderLane: Lane) => {
 	//1. 计算状态的最新值
 	//2. 创建子fiberNode
 	/**
 	 * 对于update流程begin work还需要处理 ChildrenDeletion 和 节点移动的情况比如(abc->bca)
 	 */
 	//暂时只处理单节点的问题（也就是先不考虑移动
+	//能够触发更新的要给与renderLane
 	switch (wip.tag) {
 		case HostRoot:
-			return updateHostRoot(wip);
+			return updateHostRoot(wip, renderLane);
 		case HostComponent:
 			return updateHostComponent(wip);
 		case HostText:
 			return null;
 		case FunctionComponent:
-			return updateFunctionComponent(wip);
+			return updateFunctionComponent(wip, renderLane);
 		case Fragment:
 			return updateFragment(wip);
 		default:
@@ -44,20 +46,25 @@ function updateFragment(wip: FiberNode) {
 	return wip.child;
 }
 
-function updateFunctionComponent(wip: FiberNode) {
-	const nextChildren = renderWithHooks(wip);
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+	const nextChildren = renderWithHooks(wip, renderLane);
 	reconcileChildren(wip, nextChildren);
 	return wip.child;
 }
 
-function updateHostRoot(wip: FiberNode) {
+function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 	const baseState = wip.memoizedState;
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>;
 	const pending = updateQueue.shared.pending;
+	if (pending !== null) {
+		updateQueue.shared.pending = null;
+		const current = wip.alternate;
+		if (current !== null && current.updateQueue) {
+			(current.updateQueue as UpdateQueue<Element>).shared.pending = null;
+		}
+	}
 
-	updateQueue.shared.pending = null;
-
-	const { memoizedState } = processUpdateQueue(baseState, pending); //计算后新的state
+	const { memoizedState } = processUpdateQueue(baseState, pending, renderLane); //计算后新的state
 	wip.memoizedState = memoizedState;
 
 	const nextChildren = wip.memoizedState;

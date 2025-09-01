@@ -68,14 +68,16 @@ export class FiberRootNode {
 	current: FiberNode;
 	finishedWork: FiberNode | null; //已经更新完成的fiber树，在mount阶段为null
 	pendingLanes: Lanes; //所有未被消费的lane的集合
-	finishedLanes: Lanes; //本次更新消费的lane
+	finishedLane: Lanes; //本次更新消费的lane
+	__syncScheduled: boolean; //同一 root 在未 flush 前不要重复排
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container; //指向真实dom
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
 		this.pendingLanes = NoLanes;
-		this.finishedLanes = NoLane;
+		this.finishedLane = NoLane;
+		this.__syncScheduled = false;
 	}
 }
 
@@ -99,7 +101,14 @@ export const createWorkInProgress = (
 		wip.deletions = null;
 	}
 	wip.type = current.type;
-	wip.updateQueue = current.updateQueue;
+	const currentQueue = current.updateQueue;
+	if (currentQueue != null) {
+		// ✅ 关键：共享 shared，而不是复制一个新的
+		wip.updateQueue = {
+			...currentQueue,
+			shared: currentQueue.shared,
+		};
+	}
 	wip.child = current.child;
 	wip.memoizedProps = current.memoizedProps;
 	wip.memoizedState = current.memoizedState;

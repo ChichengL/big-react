@@ -10,23 +10,24 @@ import {
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
-import { requestUpdateLanes } from './fiberLanes';
+import { Lane, NoLane, requestUpdateLanes } from './fiberLanes';
 
 let currentlyRenderingFiber: FiberNode | null = null; //当前正在处理的fiber节点 存在于内存中即将展示的fiber
 let workInProgressHook: Hook | null = null; //当前正在处理的hook
 let currentHook: Hook | null = null; //当前正在处理的hook对应的current hook
-
+let renderLane = NoLane;
 const { currentDispatcher } = internals;
 interface Hook {
 	memoizedState: any; //保存当前hook的状态
 	updateQueue: UpdateQueue<any> | null; //保存当前hook的更新队列 //当setState 时会往更新队列里添加更新
 	next: Hook | null; //指向下一个hook
 }
-export function renderWithHooks(wip: FiberNode) {
+export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	//赋值操作
 	const Component = wip.type;
 	currentlyRenderingFiber = wip;
 	wip.memoizedState = null;
+	renderLane = lane;
 
 	const current = wip.alternate; //上一次的fiber树
 	if (current !== null) {
@@ -45,6 +46,7 @@ export function renderWithHooks(wip: FiberNode) {
 	currentlyRenderingFiber = null;
 	workInProgressHook = null;
 	currentHook = null;
+	renderLane = NoLane;
 	return children;
 }
 
@@ -129,7 +131,12 @@ function updateState<State>(): [State, (action: Action<State>) => void] {
 	const { pending } = queue.shared; //获取当前hook的更新队列
 	if (pending !== null) {
 		//说明当前hook有更新
-		const { memoizedState } = processUpdateQueue(hook.memoizedState, pending);
+		queue.shared.pending = null; //需要清空队列
+		const { memoizedState } = processUpdateQueue(
+			hook.memoizedState,
+			pending,
+			renderLane,
+		);
 		hook.memoizedState = memoizedState;
 	}
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>];

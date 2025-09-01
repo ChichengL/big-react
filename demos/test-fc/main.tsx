@@ -7,19 +7,15 @@ function App() {
 			? [<li key="1">1</li>, <li key="2">2</li>]
 			: [<li key="2">2</li>, <li key="1">1</li>];
 	return (
-		// <>
-		// 	<div>1</div>
-		// 	<div>2</div>
-		// </>
-		<ul
-			onClickCapture={() => {
-				setNum(num + 1);
+		<div
+			onClick={() => {
+				setNum((prev) => prev + 1);
+				setNum((prev) => prev + 1);
+				setNum((prev) => prev + 1);
 			}}
 		>
-			<li>3</li>
-			<li>4</li>
-			{arr}
-		</ul>
+			{num}
+		</div>
 	);
 }
 function Child() {

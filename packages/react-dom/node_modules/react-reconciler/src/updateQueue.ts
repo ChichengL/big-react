@@ -64,18 +64,33 @@ export const enqueueUpdate = <State>(
 
 export const processUpdateQueue = <State>(
 	baseState: State,
-	pendingUpdate: Update<State> | null,
+	pendingUpdate: Update<State> | null, //指向最后一个更新
+	renderLane: Lane,
 ): { memoizedState: State } => {
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
 		memoizedState: baseState,
 	};
 	if (pendingUpdate !== null) {
-		const action = pendingUpdate.action;
-		if (action instanceof Function) {
-			result.memoizedState = action(baseState);
-		} else {
-			result.memoizedState = action;
-		}
+		const first = pendingUpdate.next;
+		let pending = pendingUpdate.next as Update<State>;
+		do {
+			const updateLane = pending?.lane;
+			if (updateLane === renderLane) {
+				const action = pending.action;
+				if (action instanceof Function) {
+					baseState = action(baseState);
+				} else {
+					baseState = action;
+				}
+			} else {
+				if (__DEV__) {
+					console.warn('过期更新');
+				}
+			}
+
+			pending = pending.next as Update<State>;
+		} while (pending !== first);
 	}
+	result.memoizedState = baseState;
 	return result;
 };
