@@ -6,6 +6,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import {
+	Fragment,
 	FunctionComponent,
 	HostComponent,
 	HostRoot,
@@ -65,10 +66,8 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 
 			return null;
 		case HostRoot:
-			bubbleProperties(wip); // 冒泡属性到父节点
-
-			return null;
 		case FunctionComponent:
+		case Fragment:
 			bubbleProperties(wip); // 冒泡属性到父节点
 
 			return null;

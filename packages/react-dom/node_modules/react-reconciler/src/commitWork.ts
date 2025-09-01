@@ -78,28 +78,42 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 		finishedWork.flags &= ~Update;
 	}
 };
+function recordHostChildrenToDelete(
+	childrenToDelete: FiberNode[],
+	unmountedFiber: FiberNode,
+) {
+	//1. 第一个rootHostNode
+	const lastOne = childrenToDelete[childrenToDelete.length - 1];
 
+	if (!lastOne) {
+		//最后一个不存在表示还没有记录过要删除的节点
+		childrenToDelete.push(unmountedFiber);
+	} else {
+		let node = lastOne.sibling;
+		while (node !== null) {
+			if (unmountedFiber === node) {
+				childrenToDelete.push(node);
+			}
+			node = node.sibling;
+		}
+	}
+	//2. 每找到一个Host节点，判断下这个节点是不是第一步找到那个节点的兄弟节点
+}
 const commitDeletion = (childToDeletion: FiberNode) => {
 	//递归操作
 	//1.对于FC 执行effect unmount
 	//2.对于HostComponent 解绑ref
 	//3.对于HostText 直接删除
-	let rootHostNode: FiberNode | null = null;
+	const rootChildrenToDelete: FiberNode[] = [];
 	//递归子树
 	commitNestedComponent(childToDeletion, (unmountFiber) => {
 		switch (unmountFiber.tag) {
 			case HostComponent:
-				if (rootHostNode === null) {
-					//找到要删除的第一个HostComponent
-					rootHostNode = unmountFiber;
-				}
+				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
 				//TODO: 解绑ref
 				return;
 			case HostText:
-				if (rootHostNode === null) {
-					//找到要删除的第一个HostComponent
-					rootHostNode = unmountFiber;
-				}
+				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
 				return;
 			case FunctionComponent:
 				//TODO: useEffect unmount 以及ref调用
@@ -111,7 +125,7 @@ const commitDeletion = (childToDeletion: FiberNode) => {
 				return;
 		}
 	});
-	if (rootHostNode !== null) {
+	if (rootChildrenToDelete.length) {
 		//删除rootHostComponent对应的DOM
 		const hostParent = getHostParent(childToDeletion);
 		if (hostParent === null) {
@@ -120,7 +134,9 @@ const commitDeletion = (childToDeletion: FiberNode) => {
 			}
 			return;
 		}
-		removeChild(hostParent, (rootHostNode as FiberNode).stateNode);
+		rootChildrenToDelete.forEach((node) =>
+			removeChild(hostParent, node.stateNode),
+		);
 	}
 	//删除完成之后,重置
 	childToDeletion.return = null;
@@ -171,20 +187,29 @@ function commitNestedComponent(
 			 */
 			continue; //这里需要遍历完成child之后再去遍历child的sibling，不然可能会提前终止
 		}
-		if (node === root) {
-			//终止
+		// 如果没有子节点，处理兄弟节点
+		if (node.sibling !== null) {
+			node.sibling.return = node.return;
+			node = node.sibling;
+			continue;
+		}
+
+		// 回溯到父节点
+		while (node.return !== null && node.return !== root) {
+			node = node.return;
+
+			// 检查父节点是否有兄弟节点
+			if (node.sibling !== null) {
+				node.sibling.return = node.return;
+				node = node.sibling;
+				break;
+			}
+		}
+
+		// 如果回溯到根节点，结束遍历
+		if (node.return === null || node.return === root) {
 			return;
 		}
-		while (node.sibling === null) {
-			if (node.return === null || node.return === root) {
-				return;
-			}
-			//向上归位
-			node = node.return;
-		}
-		node.sibling.return = node.return;
-		//归位完成后，继续遍历下一个节点
-		node = node.sibling;
 	}
 }
 /**
