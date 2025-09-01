@@ -9,11 +9,31 @@ import { HostText } from './workTags';
 import { Placement, ChildDeletion } from './fiberFlags';
 
 function childReconciler(shouldTrackEffects: boolean) {
+	function deleteRemainingChildren(
+		returnFiber: FiberNode,
+		currentFiber: FiberNode | null,
+	) {
+		if (!shouldTrackEffects) {
+			//如果不需要收集副作用，就不需要标记删除
+			return;
+		}
+		let childToDelete = currentFiber;
+		while (childToDelete !== null) {
+			deleteChild(returnFiber, childToDelete);
+			childToDelete = childToDelete.sibling;
+		}
+	}
 	/**
 	 *
 	 * @param returnFiber
 	 * @param currentFiber 屏幕上显示内容对应的fiber节点
 	 * @param element
+	 * @description 处理单元素的reconcile 单节点的diff（这里指的是更新后为单节点）
+	 * 需要区分 
+	 	1. key type都相同，复用节点 例如type为Aky为1 A1B2C3->A1 复用A1节点（代表type为A，key为1）
+		2. key 相同 type不同，不存在可以复用节点
+		3. key不同 type相同，不存在可以复用节点
+		4. key不同 type不同，不存在可以复用节点
 	 * @returns
 	 */
 	function reconcileSingleElement(
@@ -23,7 +43,7 @@ function childReconciler(shouldTrackEffects: boolean) {
 	) {
 		//比较key type是否相同，全都相同才可以复用
 		const key = element.key;
-		work: if (currentFiber !== null) {
+		while (currentFiber !== null) {
 			//update
 			if (currentFiber.key === key) {
 				//比较完key，就比较type
@@ -32,20 +52,23 @@ function childReconciler(shouldTrackEffects: boolean) {
 						//key/type都相同，可以复用
 						const existing = useFiber(currentFiber, element.props);
 						existing.return = returnFiber;
-
+						//剩下节点可以删除
+						deleteRemainingChildren(returnFiber, currentFiber.sibling);
 						return existing;
 					}
-					deleteChildren(returnFiber, currentFiber);
-					break work;
+					//key相同 type不同 删除所有旧的
+					deleteRemainingChildren(returnFiber, currentFiber);
+					break;
 				} else {
 					if (__DEV__) {
 						console.warn('未实现的reconcile类型', element);
-						break work;
+						break;
 					}
 				}
 			} else {
 				//key不同，直接删除旧的fiberNode
-				deleteChildren(returnFiber, currentFiber);
+				deleteChild(returnFiber, currentFiber);
+				currentFiber = currentFiber.sibling;
 			}
 		}
 		// 根据element类型，创建新的fiberNode
@@ -53,7 +76,7 @@ function childReconciler(shouldTrackEffects: boolean) {
 		fiber.return = returnFiber;
 		return fiber;
 	}
-	function deleteChildren(returnFiber: FiberNode, childToDelete: FiberNode) {
+	function deleteChild(returnFiber: FiberNode, childToDelete: FiberNode) {
 		if (!shouldTrackEffects) {
 			//如果不需要收集副作用，就不需要标记删除
 			return;
@@ -73,15 +96,17 @@ function childReconciler(shouldTrackEffects: boolean) {
 		currentFiber: FiberNode | null,
 		content: string | number,
 	) {
-		if (currentFiber !== null) {
+		while (currentFiber !== null) {
 			//update
 			if (currentFiber.tag === HostText) {
 				//可以复用
 				const existing = useFiber(currentFiber, { content });
 				existing.return = returnFiber;
+				deleteRemainingChildren(returnFiber, currentFiber.sibling);
 				return existing;
 			}
-			deleteChildren(returnFiber, currentFiber);
+			deleteChild(returnFiber, currentFiber);
+			currentFiber = currentFiber.sibling;
 		}
 		const fiber = new FiberNode(HostText, { content }, null);
 		fiber.return = returnFiber;
@@ -129,7 +154,7 @@ function childReconciler(shouldTrackEffects: boolean) {
 		}
 		if (currentFiber !== null) {
 			//兜底情况标记删除
-			deleteChildren(returnFiber, currentFiber);
+			deleteChild(returnFiber, currentFiber);
 		}
 		if (__DEV__) {
 			console.warn('未实现的reconcile类型', newChild);
