@@ -5,6 +5,10 @@ function App() {
 	useEffect(() => {
 		console.log('App mount');
 	}, []);
+	useEffect(() => {
+		console.log('num update');
+		return () => console.log('num destroy before update');
+	}, [num]);
 	// const arr =
 	// 	num % 2 === 0
 	// 		? [<li key="1">1</li>, <li key="2">2</li>]

@@ -129,6 +129,7 @@ function commitHookEffectList(
 	lastEffect: Effect,
 	callback: (effect: Effect) => void,
 ) {
+	if (lastEffect === null) return;
 	let effect = lastEffect.next as Effect;
 
 	do {

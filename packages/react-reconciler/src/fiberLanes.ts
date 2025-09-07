@@ -23,5 +23,6 @@ export const getHighestPriorityLane = (lanes: Lanes): Lane => {
 };
 
 export const markRootFinished = (root: FiberRootNode, lane: Lane) => {
-	root.finishedLane &= ~lane;
+	// 从未消费队列中移除已完成的 lane，避免重复调度
+	root.pendingLanes &= ~lane;
 };
