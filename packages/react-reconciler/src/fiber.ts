@@ -9,6 +9,8 @@ import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
 import { Lanes, NoLane, NoLanes } from './fiberLanes';
+import { Effect } from './fiberHooks';
+import { UpdateQueue } from './updateQueue';
 export class FiberNode {
 	tag: WorkTags;
 	key: Key;
@@ -26,7 +28,7 @@ export class FiberNode {
 	alternate: FiberNode | null; // 指向 alternate 节点，用于实现链表结构的快速切换,上一次的fiber树
 	flags: Flags;
 	subTreeFlags: Flags; // 子树的标记位，用于标记子树是否需要更新
-	updateQueue: unknown;
+	updateQueue: UpdateQueue<any> | null;
 	deletions: FiberNode[] | null; // 存储删除的子节点
 
 	constructor(tag: WorkTags, pendingProps: Props, key: Key) {
@@ -51,7 +53,7 @@ export class FiberNode {
 		this.pendingProps = pendingProps; //刚开始的props
 		this.memoizedProps = null; // 工作中使用的props
 		this.memoizedState = null; // 工作中使用的state
-		this.updateQueue = null;
+		this.updateQueue = null; //effect 队列
 
 		this.alternate = null; // 指向 alternate 节点，用于实现链表结构的快速切换
 		// 副作用
@@ -62,6 +64,10 @@ export class FiberNode {
 	}
 }
 
+export interface PendingPassiveEffects {
+	unmount: Effect[];
+	update: Effect[];
+}
 export class FiberRootNode {
 	// fiberRootNode 是整个应用的根节点其current 指向fiber树
 	container: Container;
@@ -70,6 +76,8 @@ export class FiberRootNode {
 	pendingLanes: Lanes; //所有未被消费的lane的集合
 	finishedLane: Lanes; //本次更新消费的lane
 	__syncScheduled: boolean; //同一 root 在未 flush 前不要重复排
+
+	pendingPassiveEffects: PendingPassiveEffects; // 收集回调的容器
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container; //指向真实dom
 		this.current = hostRootFiber;
@@ -78,6 +86,10 @@ export class FiberRootNode {
 		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLane;
 		this.__syncScheduled = false;
+		this.pendingPassiveEffects = {
+			unmount: [],
+			update: [],
+		};
 	}
 }
 

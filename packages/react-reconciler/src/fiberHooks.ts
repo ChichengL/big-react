@@ -37,11 +37,13 @@ export interface FCUpdateQueue<State> extends UpdateQueue<State> {
 }
 type EffectCallback = () => void;
 type EffectDeps = any[] | null;
+
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	//赋值操作
 	const Component = wip.type;
 	currentlyRenderingFiber = wip;
-	wip.memoizedState = null;
+	wip.memoizedState = null; //这里除了重置hooks链表还要重置effect链表
+	wip.updateQueue = null;
 	renderLane = lane;
 
 	const current = wip.alternate; //上一次的fiber树
@@ -261,4 +263,44 @@ function createFCUpdateQueue<State>() {
 function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
 	//找到当前useState对应的hook数据
 	const hook = updateWorkInProgressHook();
+	const nextDeps = deps === undefined ? null : deps;
+	let destroy: EffectCallback | void;
+	if (currentHook !== null) {
+		const prevEffect = currentHook.memoizedState as Effect;
+		destroy = prevEffect.destroy;
+
+		if (nextDeps !== null) {
+			const prevDeps = prevEffect.deps;
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				hook.memoizedState = pushEffect(Passive, create, destroy, nextDeps);
+				return;
+			}
+		}
+		//浅比较后不相等
+		(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+		hook.memoizedState = pushEffect(
+			(Passive | HookHasEffect) as Flags, //这种情况下才会执行副作用对应着 workLoop中的flushPassiveEffects
+			create,
+			destroy,
+			nextDeps,
+		);
+	}
+}
+
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+	if (nextDeps === null || prevDeps === null) {
+		return false;
+	}
+
+	if (nextDeps.length !== prevDeps.length) {
+		return false;
+	}
+	for (let i = 0; i < prevDeps.length; i++) {
+		if (Object.is(nextDeps[i], prevDeps[i])) {
+			continue;
+		}
+		return false;
+	}
+
+	return true;
 }
