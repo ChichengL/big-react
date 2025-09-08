@@ -44,6 +44,6 @@
 		"vite": "6.3.5"
 	},
 	"dependencies": {
-		"scheduler": "^0.26.0"
+		"scheduler": "^0.23.0"
 	}
 }

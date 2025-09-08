@@ -1,6 +1,12 @@
 //这里集成了跟ReactDom相关的事件系统
 
 import { Container } from 'hostConfig';
+import {
+	unstable_ImmediatePriority,
+	unstable_NormalPriority,
+	unstable_runWithPriority,
+	unstable_UserBlockingPriority,
+} from 'scheduler';
 import { Props } from 'shared/ReactTypes';
 
 //eg. dom[xxx] = reactElement props
@@ -90,7 +96,12 @@ function triggerEventFlow(
 ) {
 	for (let i = 0; i < paths.length; i++) {
 		const cb = paths[i];
-		cb.call(null, syntheticEvent); //这里使用call绑定this为null，为了
+		unstable_runWithPriority(
+			eventTypeToSchedulerPriority(syntheticEvent.type),
+			() => {
+				cb.call(null, syntheticEvent); //这里使用call绑定this为null，为了
+			},
+		);
 
 		if (syntheticEvent.__stopPropagation) {
 			break;
@@ -146,4 +157,17 @@ function collectPaths(
 		targetElement = targetElement.parentNode as DOMElement;
 	}
 	return paths;
+}
+
+function eventTypeToSchedulerPriority(eventType: string) {
+	switch (eventType) {
+		case 'click':
+		case 'keydown':
+		case 'keyup':
+			return unstable_ImmediatePriority;
+		case 'scroll':
+			return unstable_UserBlockingPriority;
+		default:
+			return unstable_NormalPriority;
+	}
 }
