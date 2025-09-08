@@ -6,4 +6,11 @@ export const REACT_ELEMENT_TYPE = supportsSymbol
 
 export const REACT_FRAGMENT_TYPE = supportsSymbol
 	? Symbol.for('react.fragment')
-	: 0xeac8;
+	: 0xeacb;
+
+export const REACT_CONTEXT_TYPE = supportsSymbol
+	? Symbol.for('react.context')
+	: 0xeacc;
+export const REACT_PROVIDER_TYPE = supportsSymbol
+	? Symbol.for('react.provider')
+	: 0xeac2;
