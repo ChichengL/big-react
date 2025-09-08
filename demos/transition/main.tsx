@@ -1,5 +1,5 @@
 import ReactDOM from 'react-dom/client';
-import { useState, useTransition, startTransition } from 'react';
+import { useState, useTransition } from 'react';
 // import { useState } from 'react';
 function App() {
 	const [tab, setTab] = useState('about');

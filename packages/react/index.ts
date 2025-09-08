@@ -27,6 +27,13 @@ export const useTransition: Dispatcher['useTransition'] = () => {
 	}
 	return dispatcher.useTransition();
 };
+export const useRef: Dispatcher['useRef'] = (initialValue) => {
+	const dispatcher = resolveDispatcher();
+	if (!dispatcher) {
+		throw new Error('hooks只能在函数组件中调用');
+	}
+	return dispatcher.useRef(initialValue);
+};
 
 //实现内部数据共享层
 //方便其他hook使用

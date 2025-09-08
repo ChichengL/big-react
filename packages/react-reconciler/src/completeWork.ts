@@ -12,13 +12,16 @@ import {
 	HostRoot,
 	HostText,
 } from './workTags';
-import { NoFlags, Update } from './fiberFlags';
+import { NoFlags, Ref, Update } from './fiberFlags';
 import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 function markUpdate(fiber: FiberNode) {
 	fiber.flags |= Update;
 }
 
+function markRef(fiber: FiberNode) {
+	fiber.flags |= Ref;
+}
 // 归过程
 export const completeWork = (wip: FiberNode): FiberNode | null => {
 	const newProps = wip.pendingProps;
@@ -38,12 +41,21 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 				//如果变化需要打上update flag
 				//暂时直接在这里使用 updateFiberProps
 				updateFiberProps(wip.stateNode, newProps);
+				//标记ref
+				if (current.ref !== wip.ref) {
+					markRef(wip);
+				}
 			} else {
 				// mount
 				const instance = createInstance(wip.type, newProps); // 创建宿主环境的实例
 
 				appendAllChildren(instance, wip);
 				wip.stateNode = instance; // 保存实例到fiber节点中
+
+				//标记ref
+				if (wip.ref !== null) {
+					markRef(wip);
+				}
 			}
 			bubbleProperties(wip); // 冒泡属性到父节点
 			return null;

@@ -10,11 +10,13 @@ import { FiberNode, FiberRootNode, PendingPassiveEffects } from './fiber';
 import {
 	ChildDeletion,
 	Flags,
+	LayoutMask,
 	MutationMask,
 	NoFlags,
 	PassiveEffect,
 	PassiveMask,
 	Placement,
+	Ref,
 	Update,
 } from './fiberFlags';
 import {
@@ -26,39 +28,41 @@ import {
 import { Effect, FCUpdateQueue } from './fiberHooks';
 import { HookHasEffect } from './hookEffectTags';
 let nextEffect: FiberNode | null = null;
-export const commitMutationEffects = (
-	finishedWork: FiberNode,
-	root: FiberRootNode,
-) => {
-	// 递归找到flag
-	nextEffect = finishedWork;
-	while (nextEffect !== null) {
-		const child: FiberNode | null = nextEffect.child;
 
-		if (
-			(nextEffect.subTreeFlags & (MutationMask | PassiveMask)) !== NoFlags &&
-			child !== null
-		) {
-			//子节点可能存在flags,需要继续递归
-			nextEffect = child;
-		} else {
-			/**
-			 * 1. 找到底了
-			 * 2. 找到的节点不包含subTreeFlags，但是可能包含flags
-			 *
-			 * 向上遍历
-			 */
-			up: while (nextEffect !== null) {
-				commitMutationEffectsOnFiber(nextEffect, root);
-				const sibling: FiberNode | null = nextEffect.sibling;
-				if (sibling !== null) {
-					nextEffect = sibling;
-					break up;
+export const commitEffects = (
+	phrase: 'mutation' | 'layout',
+	mask: Flags,
+	callback: (fiber: FiberNode, root: FiberRootNode) => void,
+) => {
+	//layout阶段
+	return (finishedWork: FiberNode, root: FiberRootNode) => {
+		// 递归找到flag
+		nextEffect = finishedWork;
+		while (nextEffect !== null) {
+			const child: FiberNode | null = nextEffect.child;
+
+			if ((nextEffect.subTreeFlags & mask) !== NoFlags && child !== null) {
+				//子节点可能存在flags,需要继续递归
+				nextEffect = child;
+			} else {
+				/**
+				 * 1. 找到底了
+				 * 2. 找到的节点不包含subTreeFlags，但是可能包含flags
+				 *
+				 * 向上遍历
+				 */
+				up: while (nextEffect !== null) {
+					callback(nextEffect, root);
+					const sibling: FiberNode | null = nextEffect.sibling;
+					if (sibling !== null) {
+						nextEffect = sibling;
+						break up;
+					}
+					nextEffect = nextEffect.return;
 				}
-				nextEffect = nextEffect.return;
 			}
 		}
-	}
+	};
 };
 
 const commitMutationEffectsOnFiber = (
@@ -66,7 +70,7 @@ const commitMutationEffectsOnFiber = (
 	root: FiberRootNode,
 ) => {
 	// 当前的finishedWork是真正存在flags的节点
-	const flags = finishedWork.flags;
+	const { flags, tag } = finishedWork;
 	if ((flags & ChildDeletion) !== NoFlags) {
 		// update
 		const deletions = finishedWork.deletions;
@@ -94,7 +98,55 @@ const commitMutationEffectsOnFiber = (
 		commitPassiveEffect(finishedWork, root, 'update');
 		finishedWork.flags &= ~PassiveEffect;
 	}
+
+	if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+		//mutation阶段解绑ref
+		safelyDetachRef(finishedWork);
+	}
 };
+function safelyDetachRef(current: FiberNode) {
+	const ref = current.ref;
+	if (ref !== null) {
+		if (typeof ref === 'function') {
+			ref(null);
+		} else {
+			ref.current = null;
+		}
+	}
+}
+function safelyAttachRef(fiber: FiberNode) {
+	const ref = fiber.ref;
+	if (ref !== null) {
+		const instance = fiber.stateNode;
+		if (typeof ref === 'function') {
+			ref(instance);
+		} else {
+			ref.current = instance;
+		}
+	}
+}
+const commitLayoutEffectsOnFiber = (
+	finishedWork: FiberNode,
+	root: FiberRootNode,
+) => {
+	// 当前的finishedWork是真正存在flags的节点
+	const { flags, tag } = finishedWork;
+	if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+		//绑定新的ref
+		safelyAttachRef(finishedWork);
+		finishedWork.flags &= ~Ref;
+	}
+};
+export const commitMutationEffects = commitEffects(
+	'mutation',
+	(MutationMask | PassiveEffect) as Flags,
+	commitMutationEffectsOnFiber,
+);
+export const commitLayoutEffects = commitEffects(
+	'layout',
+	LayoutMask as Flags,
+	commitLayoutEffectsOnFiber,
+);
 
 function commitPassiveEffect(
 	fiber: FiberNode,
@@ -202,6 +254,7 @@ const commitDeletion = (childToDeletion: FiberNode, root: FiberRootNode) => {
 			case HostComponent:
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
 				//TODO: 解绑ref
+				safelyDetachRef(unmountFiber);
 				return;
 			case HostText:
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);

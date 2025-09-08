@@ -11,6 +11,7 @@ import { ReactElementType } from 'shared/ReactTypes';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
 import { Lane } from './fiberLanes';
+import { Ref } from './fiberFlags';
 
 //递归
 export const beginWork = (wip: FiberNode, renderLane: Lane) => {
@@ -81,6 +82,7 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 function updateHostComponent(wip: FiberNode) {
 	const nextProps = wip.pendingProps; // children是放在pendingProps的
 	const nextChildren = nextProps.children;
+	markRef(wip.alternate, wip);
 	reconcileChildren(wip, nextChildren);
 	return wip.child;
 }
@@ -94,5 +96,19 @@ function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
 	} else {
 		// 说明是mount
 		wip.child = mountChildFibers(wip, null, children);
+	}
+}
+
+function markRef(current: FiberNode | null, workInProgress: FiberNode) {
+	const ref = workInProgress.ref;
+
+	if (
+		(current === null && ref !== null) ||
+		(current !== null && current.ref !== ref)
+	) {
+		//1. mount阶段
+		//2. update阶段
+
+		workInProgress.flags |= Ref;
 	}
 }

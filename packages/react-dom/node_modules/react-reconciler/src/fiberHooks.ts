@@ -77,11 +77,13 @@ const HookDispatcherOnMount: Dispatcher = {
 	useState: mountState,
 	useEffect: mountEffect,
 	useTransition: mountTransition,
+	useRef: mountRef,
 };
 const HookDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
 	useEffect: updateEffect,
 	useTransition: updateTransition,
+	useRef: updateRef,
 };
 
 /**
@@ -374,4 +376,17 @@ function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
 	callback();
 	setPending(false);
 	ReactCurrentBatchConfig.transition = prevTransition;
+}
+
+//ref = useRef
+function mountRef<T>(initialValue: T): { current: T } {
+	const hook = mountWorkInProgressHook();
+
+	const ref = { current: initialValue };
+	hook.memoizedState = ref;
+	return ref;
+}
+function updateRef() {
+	const hook = updateWorkInProgressHook();
+	return hook.memoizedState;
 }
