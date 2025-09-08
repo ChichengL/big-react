@@ -15,6 +15,7 @@ export interface Dispatcher {
 		create: () => (() => void) | void,
 		deps: Array<any> | void,
 	) => void;
+	useTransition: () => [boolean, (callback: () => void) => void];
 }
 
 export type Dispatch<State> = (action: Action<State>) => void;

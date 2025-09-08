@@ -1,6 +1,7 @@
 import internals from 'shared/internals';
 import { FiberNode } from './fiber';
 import { Dispatch, Dispatcher } from 'react/src/currentDispatcher';
+import ReactCurrentBatchConfig from 'react/src/currentBatchConfig';
 import {
 	createUpdate,
 	createUpdateQueue,
@@ -75,10 +76,12 @@ const HookDispatcherOnMount: Dispatcher = {
 	//这里应该需要区分一下什么时候是mountState什么时候是updateState
 	useState: mountState,
 	useEffect: mountEffect,
+	useTransition: mountTransition,
 };
 const HookDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
 	useEffect: updateEffect,
+	useTransition: updateTransition,
 };
 
 /**
@@ -100,6 +103,7 @@ function mountState<State>(
 	const queue = createUpdateQueue<State>(); //因为state能够触发更新
 	hook.updateQueue = queue;
 	hook.memoizedState = memoizedState;
+	hook.baseState = memoizedState;
 	const dispatch = dispatchSetState.bind(
 		null,
 		currentlyRenderingFiber!,
@@ -185,16 +189,16 @@ function updateState<State>(): [State, (action: Action<State>) => void] {
 		current.baseQueue = pending;
 		queue.shared.pending = null; //需要清空队列
 		//说明当前hook有更新
-		if (baseQueue !== null) {
-			const {
-				memoizedState,
-				baseQueue: newBaseQueue,
-				baseState: newBaseState,
-			} = processUpdateQueue(baseState, pending, renderLane);
-			hook.memoizedState = memoizedState;
-			hook.baseQueue = newBaseQueue;
-			hook.baseState = newBaseState;
-		}
+	}
+	if (baseQueue !== null) {
+		const {
+			memoizedState,
+			baseQueue: newBaseQueue,
+			baseState: newBaseState,
+		} = processUpdateQueue(baseState, baseQueue, renderLane);
+		hook.memoizedState = memoizedState;
+		hook.baseQueue = newBaseQueue;
+		hook.baseState = newBaseState;
 	}
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>];
 }
@@ -343,4 +347,31 @@ function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
 	}
 
 	return true;
+}
+
+function mountTransition(): [boolean, (callback: () => void) => void] {
+	const [isPending, setPending] = mountState<boolean>(false);
+	const hook = mountWorkInProgressHook();
+	const start = startTransition.bind(null, setPending);
+	hook.memoizedState = start;
+
+	return [isPending, start];
+}
+function updateTransition(): [boolean, (callback: () => void) => void] {
+	const [isPending] = updateState();
+	const hook = updateWorkInProgressHook();
+	const start = hook.memoizedState;
+	return [isPending as boolean, start];
+}
+
+function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
+	setPending(true);
+
+	//改变优先级
+	const prevTransition = ReactCurrentBatchConfig.transition;
+	ReactCurrentBatchConfig.transition = 1;
+
+	callback();
+	setPending(false);
+	ReactCurrentBatchConfig.transition = prevTransition;
 }

@@ -6,20 +6,27 @@ import {
 	unstable_UserBlockingPriority,
 } from 'scheduler';
 import { FiberRootNode } from './fiber';
+import ReactCurrentBatchConfig from 'react/src/currentBatchConfig';
 
 export type Lanes = number; // 表示多个lane
 export type Lane = number;
 
-export const NoLane = /**                    无 */ 0b0000000;
-export const NoLanes = /**                   无 */ 0b0000000;
-export const SyncLane = /**                同步 */ 0b0000001;
-export const InputContinuousLane = /** 输入连续 */ 0b0000010;
-export const DefaultLane = /**       默认优先级 */ 0b0000100;
-export const IdleLane = /**          空闲优先级 */ 0b0001000;
+export const NoLane = /**                        无 */ 0b0000000;
+export const NoLanes = /**                       无 */ 0b0000000;
+export const SyncLane = /**                    同步 */ 0b0000001;
+export const InputContinuousLane = /**     输入连续 */ 0b0000010;
+export const DefaultLane = /**           默认优先级 */ 0b0000100;
+export const TransitionLane = /**  Transition优先级 */ 0b0001000;
+export const IdleLane = /**              空闲优先级 */ 0b0010000;
 export const mergeLane = (lanes: Lane, lane: Lane) => {
 	return lanes | lane;
 };
 export const requestUpdateLanes = () => {
+	//支持transition
+	const isTransition = ReactCurrentBatchConfig.transition !== null;
+	if (isTransition) {
+		return TransitionLane;
+	}
 	//从上下文环境中获取Scheduler优先级
 	const priority = unstable_getCurrentPriorityLevel();
 	const lane = schedulerPriorityToLane(priority); //通过调度器的优先级获取lane

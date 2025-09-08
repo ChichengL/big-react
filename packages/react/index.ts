@@ -3,6 +3,7 @@ import currentDispatcher, {
 	Dispatcher,
 	resolveDispatcher,
 } from './src/currentDispatcher';
+import currentBatchConfig from './src/currentBatchConfig';
 export const useState: Dispatcher['useState'] = (initialState: any) => {
 	const dispatcher = resolveDispatcher();
 	if (!dispatcher) {
@@ -19,10 +20,19 @@ export const useEffect: Dispatcher['useEffect'] = (create: any, deps: any) => {
 	return dispatcher.useEffect(create, deps);
 };
 
+export const useTransition: Dispatcher['useTransition'] = () => {
+	const dispatcher = resolveDispatcher();
+	if (!dispatcher) {
+		throw new Error('hooks只能在函数组件中调用');
+	}
+	return dispatcher.useTransition();
+};
+
 //实现内部数据共享层
 //方便其他hook使用
 export const __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
 	currentDispatcher,
+	currentBatchConfig,
 };
 export const version = '0.0.0';
 //TODO: 根据环境区分使用jsx/jsxDev

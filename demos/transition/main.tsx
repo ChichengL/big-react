@@ -1,25 +1,35 @@
 import ReactDOM from 'react-dom/client';
-// import { useState, useTransition, startTransition } from 'react';
-import { useState } from 'react';
+import { useState, useTransition, startTransition } from 'react';
+// import { useState } from 'react';
 function App() {
 	const [tab, setTab] = useState('about');
-
+	console.log(tab);
+	const [isPending, startTransition] = useTransition();
+	function selectTab(nextTab) {
+		startTransition(() => {
+			setTab(nextTab);
+		});
+	}
 	return (
 		<>
 			<div style={{ display: 'flex', gap: '8px' }}>
-				<TabButton isActive={tab === 'about'} onClick={() => setTab('about')}>
+				<TabButton
+					isActive={tab === 'about'}
+					onClick={() => selectTab('about')}
+				>
 					Index
 				</TabButton>
-				<TabButton isActive={tab === 'post'} onClick={() => setTab('post')}>
+				<TabButton isActive={tab === 'post'} onClick={() => selectTab('post')}>
 					Post
 				</TabButton>
 				<TabButton
 					isActive={tab === 'contact'}
-					onClick={() => setTab('contact')}
+					onClick={() => selectTab('contact')}
 				>
 					Contact
 				</TabButton>
 			</div>
+			<hr />
 			<div>
 				{tab === 'about' && <About />}
 				{tab === 'post' && <Posts />}

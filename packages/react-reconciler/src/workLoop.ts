@@ -90,6 +90,11 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 	if (existingCallback !== null) {
 		unstable_cancelCallback(existingCallback);
 	}
+	if (__DEV__) {
+		console.log(
+			`在${highestPriorityLane === SyncLane ? '微任务' : '宏任务'}中调度，优先级${highestPriorityLane}`,
+		);
+	}
 	let newCallbackNode = null;
 	if (highestPriorityLane === SyncLane) {
 		if (root.__syncScheduled) {
