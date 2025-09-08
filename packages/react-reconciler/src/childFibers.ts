@@ -141,7 +141,9 @@ function childReconciler(shouldTrackEffects: boolean) {
 		const existingChildren: ExistingChildren = new Map();
 		let current = currentFiber;
 		while (current !== null) {
-			const keyToUse = current.key !== null ? current.key : current.index;
+			const keyToUse = (current.key !== null ? current.key : current.index) as
+				| string
+				| number;
 			existingChildren.set(keyToUse, current);
 			current = current.sibling;
 		}
@@ -217,7 +219,7 @@ function childReconciler(shouldTrackEffects: boolean) {
 		element: any,
 	): FiberNode | null {
 		// ✅ key 读取要容错
-		const keyToUse = getElementKeyToUse(element, index);
+		const keyToUse = getElementKeyToUse(element, index) as string | number;
 
 		const before = existingChildren.get(keyToUse);
 
@@ -360,7 +362,7 @@ function updateFragment(
 		fiber = createFiberFromFragment(elements, key);
 	} else {
 		//复用
-		existingChildren.delete(key);
+		existingChildren.delete(key as string | number);
 		fiber = useFiber(current, elements);
 	}
 	fiber.return = returnFiber;

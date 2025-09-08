@@ -16,6 +16,7 @@ import {
 import { NoFlags, Ref, Update } from './fiberFlags';
 import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 import { popProvider } from './fiberContext';
+import { Props } from 'shared/ReactTypes';
 
 function markUpdate(fiber: FiberNode) {
 	fiber.flags |= Update;
@@ -64,7 +65,7 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 		case HostText:
 			if (current !== null && wip.stateNode) {
 				//stateNode对应着真实DOM节点 update
-				const oldText = current.memoizedProps.content;
+				const oldText = (current.memoizedProps as Props).content;
 				const newText = newProps.content;
 				if (oldText !== newText) {
 					markUpdate(wip);

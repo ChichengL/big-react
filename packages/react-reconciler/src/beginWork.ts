@@ -12,8 +12,8 @@ import { ReactElementType } from 'shared/ReactTypes';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
 import { Lane } from './fiberLanes';
-import { pushProvider } from './fiberContext';
 import { Ref } from './fiberFlags';
+import { pushProvider } from './fiberContext';
 
 //递归
 export const beginWork = (wip: FiberNode, renderLane: Lane) => {
@@ -57,7 +57,7 @@ function updateContextProvider(wip: FiberNode) {
 	return wip.child;
 }
 function updateFragment(wip: FiberNode) {
-	const nextChildren = wip.pendingProps;
+	const nextChildren = wip.pendingProps.children;
 	reconcileChildren(wip, nextChildren);
 	return wip.child;
 }

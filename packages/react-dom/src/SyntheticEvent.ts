@@ -15,6 +15,10 @@ export const elementPropsKey = '__props';
 type EventCallback = (e: Event) => void;
 export interface DOMElement extends Element {
 	[elementPropsKey]: Props;
+	[key: string]: any;
+	style: {
+		[key: string]: any;
+	};
 }
 interface Paths {
 	bubble: EventCallback[];

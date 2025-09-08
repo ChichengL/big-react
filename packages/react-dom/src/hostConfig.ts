@@ -30,7 +30,7 @@ export const appendChildToContainer = appendInitialChild;
 
 export const commitUpdate = (fiber: FiberNode) => {
 	switch (fiber.tag) {
-		case HostComponent:
+		case HostComponent: {
 			// 处理HostComponent
 			const el = fiber.stateNode as DOMElement;
 			const nextProps = fiber.memoizedProps as Props;
@@ -38,8 +38,9 @@ export const commitUpdate = (fiber: FiberNode) => {
 			updateFiberProps(el, nextProps); // 更新事件 props
 			patchProps(el, nextProps, prevProps); // 更新真实 DOM 属性（含 style）
 			break;
+		}
 		case HostText: {
-			const text = fiber.memoizedProps.content;
+			const text = (fiber.memoizedProps as Props).content;
 			return commitTextUpdate(fiber.stateNode, text);
 		}
 		default:
@@ -101,14 +102,14 @@ function patchProps(el: DOMElement, next: Props, prev: Props | null) {
 		if (prevStyle) {
 			for (const key in prevStyle) {
 				if (!nextStyle || nextStyle[key] == null) {
-					(el.style as any)[key] = '';
+					el.style[key] = '';
 				}
 			}
 		}
 		// 再设置新样式
 		if (nextStyle) {
 			for (const key in nextStyle) {
-				(el.style as any)[key] = nextStyle[key];
+				el.style[key] = nextStyle[key];
 			}
 		}
 	}
@@ -118,15 +119,15 @@ function patchProps(el: DOMElement, next: Props, prev: Props | null) {
 		for (const key in prev) {
 			if (key === 'children' || key === 'style' || isEvent(key)) continue;
 			if (!(key in next)) {
-				(el as any)[key] = null;
+				el[key] = null;
 			}
 		}
 	}
 	for (const key in next) {
 		if (key === 'children' || key === 'style' || isEvent(key)) continue;
 		const value = (next as any)[key];
-		if ((prev as any)?.[key] !== value) {
-			(el as any)[key] = value;
+		if (prev?.[key] !== value) {
+			el[key] = value;
 		}
 	}
 }
