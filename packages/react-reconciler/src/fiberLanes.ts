@@ -72,3 +72,10 @@ export const markRootFinished = (root: FiberRootNode, lane: Lane) => {
 	// 从未消费队列中移除已完成的 lane，避免重复调度
 	root.pendingLanes &= ~lane;
 };
+
+/**
+ * @description 判断优先级是否足够
+ */
+export const isSubsetOfLanes = (set: Lanes, subset: Lane) => {
+	return (set & subset) === subset;
+};

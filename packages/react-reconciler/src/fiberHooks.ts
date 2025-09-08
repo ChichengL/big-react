@@ -6,6 +6,7 @@ import {
 	createUpdateQueue,
 	enqueueUpdate,
 	processUpdateQueue,
+	Update,
 	UpdateQueue,
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
@@ -23,6 +24,9 @@ interface Hook {
 	memoizedState: any; //保存当前hook的状态
 	updateQueue: UpdateQueue<any> | null; //保存当前hook的更新队列 //当setState 时会往更新队列里添加更新
 	next: Hook | null; //指向下一个hook
+
+	baseState: any; //保存当前hook的初始状态
+	baseQueue: Update<any> | null; //保存当前hook的初始更新队列
 }
 
 export interface Effect {
@@ -120,6 +124,8 @@ function mountWorkInProgressHook(): Hook {
 		memoizedState: null,
 		updateQueue: null,
 		next: null,
+		baseState: null,
+		baseQueue: null,
 	};
 	if (workInProgressHook === null) {
 		//第一个hook
@@ -147,16 +153,48 @@ function updateState<State>(): [State, (action: Action<State>) => void] {
 
 	//计算新的state的逻辑
 	const queue = hook.updateQueue as UpdateQueue<State>;
+	const baseState = hook.baseState;
+	const current = currentHook as Hook;
+	let baseQueue = current.baseQueue;
 	const { pending } = queue.shared; //获取当前hook的更新队列
+
+	/**
+	 * 支持并发更新
+	 * 1. pending/baseQueue update保存在current中
+	 */
 	if (pending !== null) {
-		//说明当前hook有更新
+		if (baseQueue !== null) {
+			/**
+			 * baseQueue b2->b0->b1->b2
+			 * pending p2->p0->p1->p2
+			 * baseFirst b0
+			 * pendingFirst p0
+			 *
+			 * baseQueue.next = pendingFirst =====> b2->p0->p1->p2->p0
+			 * pending.next = baseFirst =====> p2->b0->b1->b2
+			 *
+			 * 最终 pending: p2->b0->b1->b2->p0->p1->p2形成了环
+			 */
+			const baseFirst = baseQueue.next;
+			const pendingFirst = pending.next;
+			baseQueue.next = pendingFirst;
+			pending.next = baseFirst;
+		}
+		baseQueue = pending;
+		//保存在current中
+		current.baseQueue = pending;
 		queue.shared.pending = null; //需要清空队列
-		const { memoizedState } = processUpdateQueue(
-			hook.memoizedState,
-			pending,
-			renderLane,
-		);
-		hook.memoizedState = memoizedState;
+		//说明当前hook有更新
+		if (baseQueue !== null) {
+			const {
+				memoizedState,
+				baseQueue: newBaseQueue,
+				baseState: newBaseState,
+			} = processUpdateQueue(baseState, pending, renderLane);
+			hook.memoizedState = memoizedState;
+			hook.baseQueue = newBaseQueue;
+			hook.baseState = newBaseState;
+		}
 	}
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>];
 }
@@ -187,9 +225,11 @@ function updateWorkInProgressHook(): Hook {
 	}
 	currentHook = nextCurrentHook; //这里是为了复用
 	const newHook: Hook = {
-		memoizedState: currentHook!.memoizedState,
-		updateQueue: currentHook!.updateQueue,
+		memoizedState: currentHook.memoizedState,
+		updateQueue: currentHook.updateQueue,
 		next: null,
+		baseState: currentHook.baseState,
+		baseQueue: currentHook.baseQueue,
 	};
 
 	if (workInProgressHook === null) {

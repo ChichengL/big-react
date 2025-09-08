@@ -49,11 +49,12 @@ const RootCompleted = 2; //完成
  * render   beginWork,completeWork
  * commit beforeMutation,mutation,layout
  */
-function prepareFreshStack(fiber: FiberRootNode, lane: Lane) {
+function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 	//这个fiber没有child只有current
 	// fiberRootNode.current -> rootFiber(这才是第一个可以正常使用的fiber节点)
-
-	workInProgress = createWorkInProgress(fiber.current, {});
+	root.finishedLane = NoLane;
+	root.finishedWork = null;
+	workInProgress = createWorkInProgress(root.current, {});
 	wipRootRenderLane = lane;
 }
 

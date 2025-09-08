@@ -1,7 +1,7 @@
 import ReactDOM from 'react-dom/client';
 import { useState, useEffect } from 'react';
 function App() {
-	const [num, setNum] = useState(0);
+	const [num, setNum] = useState(100);
 	useEffect(() => {
 		console.log('App mount');
 	}, []);
@@ -14,24 +14,23 @@ function App() {
 	// 		? [<li key="1">1</li>, <li key="2">2</li>]
 	// 		: [<li key="2">2</li>, <li key="1">1</li>];
 	return (
-		<div
-			onClick={() => {
-				setNum((prev) => prev + 1);
-			}}
-		>
-			<div>current Number :{num}</div>
-			{num % 2 === 0 ? <Child /> : null}
-		</div>
+		<ul onClick={() => setNum(50)}>
+			{new Array(num).fill(0).map((_, i) => {
+				return <Child key={i}>{i}</Child>;
+			})}
+		</ul>
 	);
 }
-function Child() {
-	useEffect(() => {
-		console.log('Child mount');
-		return () => {
-			console.log('Child unmount');
-		};
-	}, []);
-	return <p>child</p>;
+function Child({ children }) {
+	// useEffect(() => {
+	// 	console.log('Child mount');
+	// 	return () => {
+	// 		console.log('Child unmount');
+	// 	};
+	// }, []);
+	const now = performance.now();
+	while (performance.now() - now < 1) {}
+	return <li>{children} </li>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
