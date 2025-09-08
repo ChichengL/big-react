@@ -6,6 +6,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import {
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -14,6 +15,7 @@ import {
 } from './workTags';
 import { NoFlags, Ref, Update } from './fiberFlags';
 import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
+import { popProvider } from './fiberContext';
 
 function markUpdate(fiber: FiberNode) {
 	fiber.flags |= Update;
@@ -83,6 +85,12 @@ export const completeWork = (wip: FiberNode): FiberNode | null => {
 			bubbleProperties(wip); // 冒泡属性到父节点
 
 			return null;
+		case ContextProvider: {
+			const context = wip.type._context;
+			popProvider(context);
+			bubbleProperties(wip);
+			return null;
+		}
 		default:
 			if (__DEV__) {
 				console.warn('未处理的completeWork类型', wip);

@@ -4,6 +4,7 @@ import currentDispatcher, {
 	resolveDispatcher,
 } from './src/currentDispatcher';
 import currentBatchConfig from './src/currentBatchConfig';
+
 export const useState: Dispatcher['useState'] = (initialState: any) => {
 	const dispatcher = resolveDispatcher();
 	if (!dispatcher) {
@@ -33,6 +34,11 @@ export const useRef: Dispatcher['useRef'] = (initialValue) => {
 		throw new Error('hooks只能在函数组件中调用');
 	}
 	return dispatcher.useRef(initialValue);
+};
+export { createContext } from './src/context';
+export const useContext: Dispatcher['useContext'] = (context) => {
+	const dispatcher = resolveDispatcher() as Dispatcher;
+	return dispatcher.useContext(context);
 };
 
 //实现内部数据共享层

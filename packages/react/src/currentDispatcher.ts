@@ -1,4 +1,4 @@
-import { Action } from '../../shared/ReactTypes';
+import { Action, ReactContext } from '../../shared/ReactTypes';
 //DisPatcher就是当前使用hooks的集合
 /**
  * hooks需要区分当前实在函数组件中使用还是在类组件中使用
@@ -17,6 +17,7 @@ export interface Dispatcher {
 	) => void;
 	useTransition: () => [boolean, (callback: () => void) => void];
 	useRef: <T>(initial: T) => { current: T };
+	useContext: <T>(context: ReactContext<T>) => T;
 }
 
 export type Dispatch<State> = (action: Action<State>) => void;

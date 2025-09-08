@@ -1,5 +1,6 @@
 import { Key, Props, ReactElementType, Ref } from 'shared/ReactTypes';
 import {
+	ContextProvider,
 	Fragment,
 	FunctionComponent,
 	HostComponent,
@@ -7,7 +8,7 @@ import {
 } from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
-import { REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
+import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE } from 'shared/ReactSymbols';
 import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
 import { Effect } from './fiberHooks';
 import { UpdateQueue } from './updateQueue';
@@ -18,7 +19,7 @@ export class FiberNode {
 	stateNode: any;
 	type: any;
 	pendingProps: Props;
-	ref: Ref;
+	ref: Ref | null;
 
 	return: FiberNode | null;
 	sibling: FiberNode | null;
@@ -139,7 +140,14 @@ export const createWorkInProgress = (
 export function createFiberFromElement(element: ReactElementType): FiberNode {
 	const { type, key, props, ref } = element;
 	let fiberTag: WorkTags = FunctionComponent;
-	if (type === REACT_FRAGMENT_TYPE) {
+	// 先识别 Provider，再处理其他类型
+	if (
+		typeof type === 'object' &&
+		type !== null &&
+		(type as any).$$typeof === REACT_PROVIDER_TYPE
+	) {
+		fiberTag = ContextProvider;
+	} else if (type === REACT_FRAGMENT_TYPE) {
 		fiberTag = Fragment;
 	} else if (typeof type === 'string') {
 		//原生dom节点<div/>

@@ -197,6 +197,19 @@ function childReconciler(shouldTrackEffects: boolean) {
 		});
 		return firstNewFiber;
 	}
+
+	function getElementKeyToUse(element: any, index?: number): Key {
+		if (
+			Array.isArray(element) ||
+			typeof element === 'string' ||
+			typeof element === 'number' ||
+			element === undefined ||
+			element === null
+		) {
+			return index;
+		}
+		return element.key !== null ? element.key : index;
+	}
 	function updateFromMap(
 		returnFiber: FiberNode,
 		existingChildren: ExistingChildren,
@@ -204,8 +217,7 @@ function childReconciler(shouldTrackEffects: boolean) {
 		element: any,
 	): FiberNode | null {
 		// ✅ key 读取要容错
-		const keyToUse =
-			element != null && element.key != null ? element.key : index;
+		const keyToUse = getElementKeyToUse(element, index);
 
 		const before = existingChildren.get(keyToUse);
 
