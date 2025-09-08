@@ -1,5 +1,5 @@
 import ReactDOM from 'react-dom/client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 function App() {
 	const [num, setNum] = useState(100);
 	useEffect(() => {
@@ -30,7 +30,11 @@ function Child({ children }) {
 	// }, []);
 	const now = performance.now();
 	while (performance.now() - now < 1) {}
-	return <li>{children} </li>;
+	return (
+		<Fragment>
+			<li>{children} </li>
+		</Fragment>
+	);
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

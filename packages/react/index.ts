@@ -4,6 +4,10 @@ import currentDispatcher, {
 	resolveDispatcher,
 } from './src/currentDispatcher';
 import currentBatchConfig from './src/currentBatchConfig';
+export {
+	REACT_FRAGMENT_TYPE as Fragment,
+	REACT_SUSPENSE_TYPE as Suspense,
+} from 'shared/ReactSymbols';
 
 export const useState: Dispatcher['useState'] = (initialState: any) => {
 	const dispatcher = resolveDispatcher();
