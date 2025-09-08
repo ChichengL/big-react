@@ -28,7 +28,7 @@ export const requestUpdateLanes = () => {
 /**
  * @description 将lane转换为scheduler优先级
  */
-function lanesToSchedulerPriority(lanes: Lanes) {
+export function lanesToSchedulerPriority(lanes: Lanes) {
 	const lane = getHighestPriorityLane(lanes);
 
 	if (lane === SyncLane) {
@@ -45,7 +45,7 @@ function lanesToSchedulerPriority(lanes: Lanes) {
 /**
  * @description scheduler优先级转化为lane优先级
  */
-function schedulerPriorityToLane(schedulerPriority: number) {
+export function schedulerPriorityToLane(schedulerPriority: number) {
 	if (schedulerPriority === unstable_ImmediatePriority) {
 		return SyncLane;
 	}

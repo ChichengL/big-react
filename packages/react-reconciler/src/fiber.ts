@@ -8,9 +8,10 @@ import {
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
-import { Lanes, NoLane, NoLanes } from './fiberLanes';
+import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
 import { Effect } from './fiberHooks';
 import { UpdateQueue } from './updateQueue';
+import { CallbackNode } from 'scheduler';
 export class FiberNode {
 	tag: WorkTags;
 	key: Key;
@@ -78,6 +79,9 @@ export class FiberRootNode {
 	__syncScheduled: boolean; //同一 root 在未 flush 前不要重复排
 
 	pendingPassiveEffects: PendingPassiveEffects; // 收集回调的容器
+
+	callbackNode: CallbackNode | null; //当前正在执行的回调
+	callbackPriority: Lane;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container; //指向真实dom
 		this.current = hostRootFiber;
@@ -90,6 +94,9 @@ export class FiberRootNode {
 			unmount: [],
 			update: [],
 		};
+
+		this.callbackNode = null;
+		this.callbackPriority = NoLane;
 	}
 }
 
